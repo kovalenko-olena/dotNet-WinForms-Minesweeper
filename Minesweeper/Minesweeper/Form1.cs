@@ -1,12 +1,18 @@
+using System.Drawing.Drawing2D;
+using System.Net.Sockets;
 using System.Runtime.ConstrainedExecution;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
 
 namespace Minesweeper
 {
-    public partial class Minesweeper : Form
+    public partial class Form1 : Form
     {
-        public Minesweeper()
+        List<Salut> saluts;
+        Random r = new Random();
+        public Form1()
         {
             InitializeComponent();
+            saluts = new List<Salut>();
         }
 
         int height = 10;
@@ -14,7 +20,9 @@ namespace Minesweeper
         int offset = 40;
         int bombPercent = 15;
         int indent;
+        int countVin = 0;
         MinerButton[,] field;
+
 
         private void Minesweeper_Load(object sender, EventArgs e)
         {
@@ -23,17 +31,12 @@ namespace Minesweeper
             bombPercent = trackBar2.Value;
             label1.Text = "field size " + height.ToString();
             label2.Text = "bombs " + bombPercent.ToString() + "%";
-            indent = (int)1.2*btnStart.Height;
+            indent = (int)1.2 * btnStart.Height;
         }
-        void Generate()
-        {
-            field = new MinerButton[height, width];
 
-            // AddButton();
-            GenerateField();
-        }
         public void GenerateField()
         {
+            field = new MinerButton[height, width];
             Random rng = new Random();
             for (int x = 0; x < height; x++)
             {
@@ -54,70 +57,13 @@ namespace Minesweeper
                     }
                     newButton.xCoord = x;
                     newButton.yCoord = y;
-                    //AddButton();
                     Controls.Add(newButton);
                     newButton.MouseUp += new MouseEventHandler(FieldButtonClick);
                     field[x, y] = newButton;
                 }
             }
-            /*Thread[] threads = new Thread[height];
-            for (int i = 0; i < width; i++)
-            {
-                threads[i] = new Thread(new ThreadStart(FieldForForm(i)));
-            }*/
-
-
-
         }
 
-        /*
-        private void AddButton()
-        {
-            
-            if (this.InvokeRequired)
-            {
-                this.Invoke(new MethodInvoker(this.AddButton));
-            }
-            else
-            {
-                //Thread.Sleep(20);
-                Random rng = new Random();
-                for (int x = 0; x < height; x++)
-                {
-                    
-                    for (int y = 0; y < width; y++)
-                    {
-                        FieldButton newButton = new FieldButton();
-                        newButton.FlatStyle = FlatStyle.Popup;
-                        newButton.FlatAppearance.BorderSize = 1;
-                        newButton.FlatAppearance.BorderColor = Color.DimGray;
-                        newButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 12, FontStyle.Bold);
-                        newButton.Location = new Point(offset / 10 + x * offset, indent + offset + y * offset);
-                        newButton.Size = new Size(offset, offset);
-                        newButton.isClickable = true;
-                        newButton.wasOpen = false;
-                        if (rng.Next(0, height * width) < bombPercent)
-                        {
-                            newButton.isBomb = true;
-                        }
-                        newButton.xCoord = x;
-                        newButton.yCoord = y;
-                        //AddButton();
-                        Controls.Add(newButton);
-                        newButton.MouseUp += new MouseEventHandler(FieldButtonClick);
-                        field[x, y] = newButton;
-                    }
-                }
-            }
-            
-        }
-
-        private void buttonStart_Click(object sender, EventArgs e)
-        {
-            Thread addControlThread =
-                new Thread(new ThreadStart(this.AddButton));
-            addControlThread.Start();
-        }*/
 
         void FieldButtonClick(object sender, MouseEventArgs e)
         {
@@ -184,6 +130,7 @@ namespace Minesweeper
             }
 
             btnStart.Image = Properties.Resources.sad;
+            countVin = 0;
         }
         void OpenRegion(MinerButton clickedButton)
         {
@@ -305,6 +252,7 @@ namespace Minesweeper
 
         void CheckWin()
         {
+            if (btnStart.Image == Properties.Resources.sad) return;
             int cellsOpened = 0;
             for (int x = 0; x < height; x++)
             {
@@ -318,9 +266,15 @@ namespace Minesweeper
             }
             if (cellsOpened == width * height)
             {
-                Color c = Color.FromArgb(255);
-                
-                MessageBox.Show("Winner!", "minesweeper");
+                for (int x = 0; x < height; x++)
+                {
+                    for (int y = 0; y < width; y++)
+                    {
+                        field[x, y].Hide();
+                    }
+                }
+                WinnerSalut();
+                //MessageBox.Show("Winner!", "minesweeper");
             }
         }
 
@@ -332,7 +286,7 @@ namespace Minesweeper
             width = trackBar1.Value;
             btnStart.Image = Properties.Resources.happy;
 
-            Generate();
+            GenerateField();
         }
 
         private void trackBar2_ValueChanged(object sender, EventArgs e)
@@ -347,5 +301,54 @@ namespace Minesweeper
             width = trackBar1.Value;
             label1.Text = "field size " + height.ToString();
         }
+
+        private void WinnerSalut()
+        {
+            countVin++;
+            Color[] clrs = new Color[] { Color.Red, Color.Blue, Color.Yellow, Color.Magenta, Color.Green, Color.Orange };
+            int cnum = r.Next(clrs.GetLength(0));
+            Point point;
+
+            for (int i = 0; i < countVin; i++)
+            {
+                cnum = r.Next(clrs.GetLength(0));
+                try
+                {
+                    point = new Point((offset / 10 + width * offset) / (r.Next(1, 10)), (offset / 10 + width * offset) - ((offset / 10 + width * offset) / (r.Next(1, 10))));
+                }
+                catch (Exception ex)
+                {
+                    point = new Point(0, 0);
+                }
+
+                ColorSalut salut = new ColorSalut(clrs[cnum], -0.7F, point);
+
+                saluts.Add(salut);
+                salut.Start();
+            }
+
+        }
+
+        private void Form1_Paint(object sender, PaintEventArgs e)
+        {
+            foreach (Salut s in saluts)
+            {
+
+                s.Paint(e.Graphics);
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            foreach (Salut s in saluts)
+            {
+                s.Update(3.0);
+            }
+            this.Refresh();
+        }
+
+
+
+
     }
 }
