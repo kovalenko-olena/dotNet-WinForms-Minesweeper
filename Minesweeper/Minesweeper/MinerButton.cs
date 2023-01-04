@@ -10,7 +10,6 @@ namespace Minesweeper
     {
         public bool isBomb;
         public bool isFlag;
-        //insert or del flag
         public bool isClickable;
         public bool wasAdded;
         public bool wasOpen;
