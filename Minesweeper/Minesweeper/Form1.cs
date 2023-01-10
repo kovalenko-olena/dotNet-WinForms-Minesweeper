@@ -7,8 +7,7 @@ namespace Minesweeper
 {
     public partial class Form1 : Form
     {
-        List<Salut> saluts;
-        Random r = new Random();
+        
         public Form1()
         {
             InitializeComponent();
@@ -17,10 +16,12 @@ namespace Minesweeper
 
         int height = 10;
         int width = 10;
-        int offset = 40;
-        int bombPercent = 15;
+        int offset = 30;
+        int bombPercent;
         int indent;
         int countVin = 0;
+        List<Salut> saluts;
+        Random r = new Random();
         MinerButton[,] field;
 
 
@@ -28,19 +29,20 @@ namespace Minesweeper
         {
             height = trackBar1.Value;
             width = trackBar1.Value;
-            bombPercent = trackBar2.Value;
+            bombPercent = height * width * trackBar2.Value / 100;
             label1.Text = "field size " + height.ToString();
-            label2.Text = "bombs " + bombPercent.ToString() + "%";
+            label2.Text = "bombs " + trackBar2.Value.ToString() + "%";
             indent = (int)1.2 * btnStart.Height;
         }
 
         public void GenerateField()
         {
-            field = new MinerButton[height, width];
+            field = new MinerButton[width, height];
             Random rng = new Random();
-            for (int x = 0; x < height; x++)
+            int bombCount = 0;
+            for (int x = 0; x < width; x++)
             {
-                for (int y = 0; y < width; y++)
+                for (int y = 0; y < height; y++)
                 {
                     MinerButton newButton = new MinerButton();
                     newButton.FlatStyle = FlatStyle.Popup;
@@ -51,15 +53,30 @@ namespace Minesweeper
                     newButton.Size = new Size(offset, offset);
                     newButton.isClickable = true;
                     newButton.wasOpen = false;
-                    if (rng.Next(0, height * width) < bombPercent)
+                    if (rng.Next(0, height * width) < bombPercent && bombCount < bombPercent)
                     {
                         newButton.isBomb = true;
+                        bombCount++;
                     }
                     newButton.xCoord = x;
                     newButton.yCoord = y;
                     Controls.Add(newButton);
                     newButton.MouseUp += new MouseEventHandler(FieldButtonClick);
                     field[x, y] = newButton;
+                }
+            }
+            if (bombPercent > bombCount)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    for (int y = 0; y < height; y++)
+                    {
+                        if (rng.Next(0, height * width) < bombPercent && bombCount < bombPercent && field[x, y].isBomb == false)
+                        {
+                            field[x, y].isBomb = true;
+                            bombCount++;
+                        }
+                    }
                 }
             }
         }
@@ -254,24 +271,19 @@ namespace Minesweeper
         {
             if (btnStart.Image == Properties.Resources.sad) return;
             int cellsOpened = 0;
-            for (int x = 0; x < height; x++)
+           
+            foreach(MinerButton button in field)
             {
-                for (int y = 0; y < width; y++)
+                if (button.wasOpen)
                 {
-                    if (field[x, y].wasOpen)
-                    {
-                        cellsOpened++;
-                    }
+                    cellsOpened++;
                 }
             }
             if (cellsOpened == width * height)
             {
-                for (int x = 0; x < height; x++)
+                foreach (MinerButton button in field)
                 {
-                    for (int y = 0; y < width; y++)
-                    {
-                        field[x, y].Hide();
-                    }
+                    button.Hide();
                 }
                 WinnerSalut();
                 //MessageBox.Show("Winner!", "minesweeper");
@@ -281,9 +293,17 @@ namespace Minesweeper
         private void button1_Click(object sender, EventArgs e)
         {
             DelButtons();
-            bombPercent = trackBar2.Value;
-            height = trackBar1.Value;
-            width = trackBar1.Value;
+            if (customSize.Checked == false)
+            {
+                height = trackBar1.Value;
+                width = trackBar1.Value;
+            }
+            else
+            {
+                height = (int)((this.Height - indent - offset*2.7) / offset);
+                width = (int)((this.Width- offset * 0.8) / offset);
+            }
+            bombPercent = height * width * trackBar2.Value / 100;
             btnStart.Image = Properties.Resources.happy;
 
             GenerateField();
@@ -291,8 +311,8 @@ namespace Minesweeper
 
         private void trackBar2_ValueChanged(object sender, EventArgs e)
         {
-            bombPercent = trackBar2.Value;
-            label2.Text = "bombs " + bombPercent.ToString() + "%";
+            bombPercent = height * width * trackBar2.Value / 100;
+            label2.Text = "bombs " + trackBar2.Value.ToString() + "%";
         }
 
         private void trackBar1_ValueChanged(object sender, EventArgs e)
@@ -314,7 +334,7 @@ namespace Minesweeper
                 cnum = r.Next(clrs.GetLength(0));
                 try
                 {
-                    point = new Point((offset / 10 + width * offset) / (r.Next(1, 10)), (offset / 10 + width * offset) - ((offset / 10 + width * offset) / (r.Next(1, 10))));
+                    point = new Point((offset / 10 + width * offset) / (r.Next(1, 10)), (offset / 10 + height * offset) - ((offset / 10 + height * offset) / (r.Next(1, 10))));
                 }
                 catch (Exception ex)
                 {
@@ -333,7 +353,6 @@ namespace Minesweeper
         {
             foreach (Salut s in saluts)
             {
-
                 s.Paint(e.Graphics);
             }
         }
@@ -347,8 +366,18 @@ namespace Minesweeper
             this.Refresh();
         }
 
-
-
-
+        private void customSize_CheckedChanged(object sender, EventArgs e)
+        {
+            if (customSize.Checked)
+            {
+                this.AutoSize = false;
+                trackBar1.Enabled = false;
+            }
+            else
+            {
+                this.AutoSize = true;
+                trackBar1.Enabled = true;
+            }
+        }
     }
 }
