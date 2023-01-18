@@ -33,6 +33,7 @@ namespace Minesweeper
             label1.Text = "field size " + height.ToString();
             label2.Text = "bombs " + trackBar2.Value.ToString() + "%";
             indent = (int)1.2 * btnStart.Height;
+            countVin = 0;
         }
 
         public void GenerateField()
@@ -111,6 +112,7 @@ namespace Minesweeper
                     else
                     {
                         clickedButton.Image = null;
+                        clickedButton.isFlag = false;
                         clickedButton.wasOpen = false;
                     }
                 }
@@ -147,7 +149,7 @@ namespace Minesweeper
             }
 
             btnStart.Image = Properties.Resources.sad;
-            countVin = 0;
+            
         }
         void OpenRegion(MinerButton clickedButton)
         {
